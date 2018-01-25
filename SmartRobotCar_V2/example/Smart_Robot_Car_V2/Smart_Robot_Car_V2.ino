@@ -50,6 +50,18 @@ bool avoidFlag = false;
 bool trackStopFlag = false;
 bool avoidStopFlag = false;
 long currentTime = 0;
+//The center Angle of two steering engines.
+byte servoXCenterPoint = 88;
+
+//The maximum Angle of two steering gear
+byte servoXmax = 170;
+
+//The accuracy of servo
+byte servoStep = 4;
+
+//The current Angle of the two steering engines is used for retransmission
+byte servoXPoint = 0;
+
 
 
 UCNEC myIR(2);
@@ -69,13 +81,13 @@ void setup()
   pinMode(TRIG_PIN, OUTPUT);//Set the connection pin output mode trog pin
   Serial.begin(9600);
   neckControllerServoMotor.attach(10);
-  neckControllerServoMotor.write(90);
+  neckControllerServoMotor.write(88);
   delay(2000);
   MAX_SPEED_LEFT = SZ_SPEEDTHR;
   MAX_SPEED_RIGHT = SZ_SPEEDTHR;
-     neckControllerServoMotor.detach();
-          delay(100);
-          myIR.begin();
+  neckControllerServoMotor.detach();
+  delay(100);
+  myIR.begin();
 }
 
 void loop()
@@ -85,7 +97,7 @@ void loop()
     processCommand(strReceived);
     strReceived = "";
     commandAvailable = false;
-  }   
+  }
 }
 void getSerialLine()
 {
@@ -112,43 +124,43 @@ void getSerialLine()
       }
 
       if (!avoidFlag) {
-      while (myIR.available())
-      {
-        temp =  myIR.read();
-      }
-      if (temp == 0xFF46B9)  //up
-      {
-        temp = 0;
-        Serial.println(F(" Move forward"));
-        detected_flag = true;
-        int temp = readPing();
-        if ( temp <= TURN_DIST && temp > 0 ) {
+        while (myIR.available())
+        {
+          temp =  myIR.read();
+        }
+        if (temp == 0xFF46B9)  //up
+        {
+          temp = 0;
+          Serial.println(F(" Move forward"));
+          detected_flag = true;
+          int temp = readPing();
+          if ( temp <= TURN_DIST && temp > 0 ) {
+            moveStop();
+          }
+          moveForward();
+        } else if (temp == 0xFF15EA) { //down
+          detected_flag = false;
+          Serial.println(F(" Move backward"));
+          temp = 0;
+          moveBackward();
+        } else if (temp == 0xFF44BB) { // left
+          Serial.println(F(" Turn left"));
+          temp = 0;
+          detected_flag = true;
+          turnLeft();
+        } else if (temp == 0xFF43BC) { //right
+          temp = 0;
+          detected_flag = false;
+          Serial.println(F(" Turn right"));
+          turnRight();
+        } else if (temp == 0xFF40BF) {
+          Serial.println(F(" Stop"));
+          temp = 0;
+          detected_flag = false;
+          neckControllerServoMotor.write(90);
           moveStop();
         }
-        moveForward();
-      } else if (temp == 0xFF15EA) { //down
-        detected_flag = false;
-        Serial.println(F(" Move backward"));
-        temp = 0;
-        moveBackward();
-      } else if (temp == 0xFF44BB) { // left
-        Serial.println(F(" Turn left"));
-        temp = 0;
-        detected_flag = true;
-        turnLeft();
-      } else if (temp == 0xFF43BC) { //right
-        temp = 0;
-        detected_flag = false;
-        Serial.println(F(" Turn right"));
-        turnRight();
-      } else if (temp == 0xFF40BF) {
-        Serial.println(F(" Stop"));
-        temp = 0;
-        detected_flag = false;
-        neckControllerServoMotor.write(90);
-        moveStop();
       }
-    }
       return;
     }
     serialIn = Serial.read();
@@ -158,7 +170,7 @@ void getSerialLine()
         strReceived += a;
       }
     }
-   
+
   }
   if (serialIn == '\r') {
     commandAvailable = true;
@@ -199,9 +211,9 @@ void processCommand(String input)
     if (avoidFlag) {
       avoidFlag = false;
       avoidStopFlag = true;
-         neckControllerServoMotor.detach();
-          delay(100);
-          myIR.begin();
+      neckControllerServoMotor.detach();
+      delay(100);
+      myIR.begin();
     }
 
 
@@ -215,11 +227,11 @@ void processCommand(String input)
     if (avoidFlag) {
       avoidFlag = false;
       avoidStopFlag = true;
-         neckControllerServoMotor.detach();
-          delay(100);
-          myIR.begin();
+      neckControllerServoMotor.detach();
+      delay(100);
+      myIR.begin();
     }
-    
+
 
   } else if (command == "MD_left")
   {
@@ -231,9 +243,9 @@ void processCommand(String input)
     if (avoidFlag) {
       avoidFlag = false;
       avoidStopFlag = true;
-         neckControllerServoMotor.detach();
-          delay(100);
-          myIR.begin();
+      neckControllerServoMotor.detach();
+      delay(100);
+      myIR.begin();
     }
 
 
@@ -247,9 +259,9 @@ void processCommand(String input)
     if (avoidFlag) {
       avoidFlag = false;
       avoidStopFlag = true;
-         neckControllerServoMotor.detach();
-          delay(100);
-          myIR.begin();
+      neckControllerServoMotor.detach();
+      delay(100);
+      myIR.begin();
     }
 
 
@@ -263,9 +275,9 @@ void processCommand(String input)
     if (avoidFlag) {
       avoidFlag = false;
       avoidStopFlag = true;
-         neckControllerServoMotor.detach();
-          delay(100);
-          myIR.begin();
+      neckControllerServoMotor.detach();
+      delay(100);
+      myIR.begin();
     }
 
   } else if (command == "track")
@@ -292,6 +304,15 @@ void processCommand(String input)
     leftspeed = val;
     val = getValue(input, ' ', 2).toInt();
     rightspeed = val;
+  } else if (command == "DJ_left")
+  {
+    servo_left();
+  } else if (command == "DJ_right")
+  {
+    servo_right();
+  } else if (command == "DJ_middle")
+  {
+    servo_center();
   }
 
   else if (!(command.indexOf("SZ") < 0))
@@ -610,6 +631,7 @@ void moveTrack(void)
 
 void avoidance(void)
 {
+  unsigned int S;
   strReceived = "";
   commandAvailable = false;
   while (1) {
@@ -635,31 +657,72 @@ void avoidance(void)
       moveStop();
       strReceived = "";
       commandAvailable = false;
+
+      delay(100);
+      neckControllerServoMotor.detach();
+      delay(100);
+      myIR.begin();
+
       break;
     }
-    int  S = readPing();
-    if (S <= TURN_DIST && S > 0 ) {
-      ;
-      turn();
-    } else
+    neckControllerServoMotor.write(90);
+    S = readPing();
+    if (S <= TURN_DIST ) {
+      turn();delay(500);
+    } else if (S > TURN_DIST) {
       moveForward();
+    }
   }
 }
 
 
+//void turn() {
+//  moveBackward();
+//  delay(turnTime);
+//  moveStop();
+//  int x = random(1);
+//  if (x = 0) {
+//    turnRight();
+//  }
+//  else {
+//    turnLeft();
+//  }
+//  delay(turnTime);
+//  moveStop();
+//}
+
 void turn() {
-  moveBackward();
-  delay(turnTime);
+  int S,Sleft,Sright;
   moveStop();
-  int x = random(1);
-  if (x = 0) {
-    turnRight();
+  neckControllerServoMotor.write(150);
+  delay(300);
+  S = readPing();
+  Sleft = S;
+  neckControllerServoMotor.write(90);
+  delay(300);
+  neckControllerServoMotor.write(30);
+  delay(300);
+  S = readPing();
+  Sright = S;
+  neckControllerServoMotor.write(90);
+  delay(300);
+  if (Sleft <= TURN_DIST && Sright <= TURN_DIST) {
+    moveBackward();
+    delay(500);
+    int x = random(1);
+    if (x = 0) {
+      turnRight();
+    }
+    else {
+      turnLeft();
+    }
+  } else {
+    if (Sleft >= Sright) {
+      turnLeft();
+    } else {
+      turnRight();
+    }
   }
-  else {
-    turnLeft();
-  }
-  delay(turnTime);
-  moveStop();
 }
 
 void SendMessage(String data) {
@@ -693,5 +756,67 @@ long microsecondsToCentimeters(long microseconds)
   // The ping travels out and back, so to find the distance of the
   // object we take half of the distance travelled.
   return microseconds / 29 / 2;
+}
+
+void servo_right(void)
+{
+  if (!avoidFlag) {
+    neckControllerServoMotor.attach(10); delay(10);
+    int servotemp = neckControllerServoMotor.read();
+    servotemp -= servoStep;
+    servo_Horizontal(servotemp);
+    delay(50);
+    neckControllerServoMotor.detach();
+    delay(50);
+    myIR.begin();
+  }
+
+}
+void servo_left(void)
+{
+  if (!avoidFlag) {
+    neckControllerServoMotor.attach(10); delay(10);
+    int servotemp = neckControllerServoMotor.read();
+    servotemp += servoStep;
+    servo_Horizontal(servotemp);
+    delay(50);
+    neckControllerServoMotor.detach();
+    delay(50);
+    myIR.begin();
+  }
+}
+void servo_center(void)
+{
+  if (!avoidFlag) {
+    neckControllerServoMotor.attach(10); delay(10);
+    servo_Horizontal(servoXCenterPoint);
+    delay(50);
+    neckControllerServoMotor.detach();
+    delay(50);
+    myIR.begin();
+  }
+}
+
+void servo_Horizontal(int corner)
+{
+  int i = 0;
+  byte cornerX = neckControllerServoMotor.read();
+  if (cornerX > corner) {
+    for (i = cornerX; i > corner; i = i - servoStep) {
+      \
+      neckControllerServoMotor.write(i);
+      servoXPoint = i;
+      delay(50);
+    }
+  }
+  else {
+    for (i = cornerX; i < corner; i = i + servoStep) {
+      neckControllerServoMotor.write(i);
+      servoXPoint = i;
+      delay(50);
+    }
+  }
+  neckControllerServoMotor.write(corner);
+  servoXPoint = corner;
 }
 
