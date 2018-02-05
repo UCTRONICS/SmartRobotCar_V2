@@ -626,7 +626,6 @@ void moveTrack(void)
   }
 }
 
-
 void avoidance(void)
 {
   unsigned int S;
@@ -672,22 +671,6 @@ void avoidance(void)
     }
   }
 }
-
-
-//void turn() {
-//  moveBackward();
-//  delay(turnTime);
-//  moveStop();
-//  int x = random(1);
-//  if (x = 0) {
-//    turnRight();
-//  }
-//  else {
-//    turnLeft();
-//  }
-//  delay(turnTime);
-//  moveStop();
-//}
 
 void turn() {
   int S,Sleft,Sright;
