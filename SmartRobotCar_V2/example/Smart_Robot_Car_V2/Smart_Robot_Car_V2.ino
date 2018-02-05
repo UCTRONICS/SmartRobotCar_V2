@@ -1,6 +1,8 @@
-//Smart RobotCar V2 demo (C)2018 Lee
-//This demo needs to be used in conjunction with the mobile APP/IR controller.
-//You can change the value of the SZ_SPEEDTHR to change the default motor speed
+// Smart RobotCar V2 demo (C)2018 Lee
+// This demo needs to be used in conjunction with the mobile APP/IR controller.
+// You can change the value of the SZ_SPEEDTHR to change the default motor speed
+// You can control the servo to turn 0 - 180 degree.
+// This demo support obstacle avoidance and trace
 
 #include <UCMotor.h>
 #include <Servo.h>
@@ -50,19 +52,15 @@ bool avoidFlag = false;
 bool trackStopFlag = false;
 bool avoidStopFlag = false;
 long currentTime = 0;
+
 //The center Angle of two steering engines.
 byte servoXCenterPoint = 88;
-
-//The maximum Angle of two steering gear
-byte servoXmax = 170;
 
 //The accuracy of servo
 byte servoStep = 4;
 
 //The current Angle of the two steering engines is used for retransmission
 byte servoXPoint = 0;
-
-
 
 UCNEC myIR(2);
 UC_DCMotor leftMotor1(3, MOTOR34_64KHZ);
